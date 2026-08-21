@@ -5,9 +5,9 @@ import re
 import random
 
 try:
-    import google.generativeai as genai
+    from google import genai
 except ImportError:
-    print("Google Generative AI library not found. Please install it using: pip install google-generativeai")
+    print("Google GenAI library not found. Please install it using: pip install google-genai")
     exit(1)
 
 # Initialize Gemini Client
@@ -16,7 +16,7 @@ if not GEMINI_API_KEY:
     print("Error: GEMINI_API_KEY environment variable not set.")
     exit(1)
     
-genai.configure(api_key=GEMINI_API_KEY)
+client = genai.Client(api_key=GEMINI_API_KEY)
 
 def generate_seo_blog_post(topic, keywords):
     """
@@ -32,8 +32,10 @@ def generate_seo_blog_post(topic, keywords):
     """
     
     try:
-        model = genai.GenerativeModel('gemini-1.5-flash')
-        response = model.generate_content(prompt)
+        response = client.models.generate_content(
+            model='gemini-3.6-flash',
+            contents=prompt
+        )
         content = response.text
     except Exception as e:
         print(f"Error calling Gemini API: {e}")

@@ -28,7 +28,9 @@ def generate_seo_blog_post(topic, keywords):
     Write a high-quality, professional, and SEO-optimized blog post (around 800-1000 words) in Markdown format about '{topic}'.
     Make sure to naturally include these keywords: {', '.join(keywords)}.
     The blog post should be informative, engaging, and directly related to AI text generation, AI watermarks, or bypassing AI detection.
-    Do NOT include a main # Heading at the very top (I will add it programmatically), start straight with the introduction or ## subheadings.
+    
+    IMPORTANT INSTRUCTION: The very first line of your response MUST be a catchy, unique title for the article starting with a single #. 
+    Make the title unique every time (for example, add "A 2026 Guide", or "Expert Analysis", etc).
     """
     
     try:
@@ -36,35 +38,43 @@ def generate_seo_blog_post(topic, keywords):
             model='gemini-3.6-flash',
             contents=prompt
         )
-        content = response.text
+        content = response.text.strip()
     except Exception as e:
         print(f"Error calling Gemini API: {e}")
-        return None, None
+        return None, None, None
+    
+    # Extract the dynamic title from the first line
+    lines = content.split('\n')
+    dynamic_title = topic
+    if lines and lines[0].startswith('#'):
+        dynamic_title = lines[0].replace('#', '').strip()
+        # Remove the title from the body so we can inject our image below it
+        content = '\n'.join(lines[1:]).strip()
     
     current_date = datetime.datetime.now().strftime("%B %d, %Y")
-    slug = re.sub(r'[^a-z0-9]+', '-', topic.lower()).strip('-') + f"-{random.randint(1000, 9999)}"
+    slug = re.sub(r'[^a-z0-9]+', '-', dynamic_title.lower()).strip('-') + f"-{random.randint(1000, 9999)}"
     
     # Generate a random seed for the dynamic image so it's unique per post
     random_seed = random.randint(1, 100000)
     header_image_url = f"https://loremflickr.com/1200/630/technology,ai,computer?random={random_seed}"
     
     # Prepend the Title, Image, and Date to the generated markdown content
-    formatted_content = f"# {topic}\n\n![AI Technology Header]({header_image_url})\n\n*Published on: {current_date}*\n\n{content}"
+    formatted_content = f"# {dynamic_title}\n\n![AI Technology Header]({header_image_url})\n\n*Published on: {current_date}*\n\n{content}"
     
-    return slug, formatted_content
+    return slug, formatted_content, dynamic_title
 
 def main():
     # A list of diverse topics to choose from randomly each day
     blog_topics = [
-        ("How to Bypass Turnitin AI Detection in 2026", ["Turnitin AI detection", "AI text watermarks", "Turnitin bypass tool"]),
-        ("The Ultimate ChatGPT Watermark Remover Guide", ["ChatGPT watermark remover", "Remove AI footprint", "Humanize AI text"]),
-        ("Can Universities Detect Claude 3.5 Sonnet?", ["Claude 3.5 Sonnet detection", "AI academic integrity", "Claude text humanizer"]),
+        ("How to Bypass Turnitin AI Detection", ["Turnitin AI detection", "AI text watermarks", "Turnitin bypass tool"]),
+        ("The Ultimate ChatGPT Watermark Remover", ["ChatGPT watermark remover", "Remove AI footprint", "Humanize AI text"]),
+        ("Can Universities Detect Claude 3.5 Sonnet", ["Claude 3.5 Sonnet detection", "AI academic integrity", "Claude text humanizer"]),
         ("Why AI Detectors Fail: The False Positive Problem", ["AI detector false positive", "AI writing detection error", "bypass AI checks"]),
-        ("Humanizing AI Content: Best Practices for 2026", ["Humanize AI content", "AI paraphrase tool", "undetectable AI writing"]),
+        ("Humanizing AI Content: Best Practices", ["Humanize AI content", "AI paraphrase tool", "undetectable AI writing"]),
         ("The Future of AI Watermarking Technologies", ["AI watermark techniques", "detecting AI generated text", "LLM watermarking"])
     ]
     
-    # Pick ONE random topic to generate today so we don't spam the API or Dev.to
+    # Pick ONE random topic to generate today
     topic, keywords = random.choice(blog_topics)
     
     # Create the output directory if it doesn't exist
@@ -81,7 +91,7 @@ def main():
         except Exception:
             pass
             
-    slug, content = generate_seo_blog_post(topic, keywords)
+    slug, content, final_title = generate_seo_blog_post(topic, keywords)
     
     if not slug or not content:
         print("Failed to generate blog post.")
@@ -95,7 +105,7 @@ def main():
     
     # Prepend new metadata for the frontend to list
     new_entry = {
-        "title": topic,
+        "title": final_title,
         "slug": slug,
         "date": datetime.datetime.now().strftime("%Y-%m-%dT%H:%M:%S"), # Use exact timestamp to ensure it's always the newest
         "excerpt": f"Learn the secrets behind {keywords[0]} and how to effectively manage AI generated content.",

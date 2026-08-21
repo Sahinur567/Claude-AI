@@ -48,6 +48,37 @@ const DynamicBlog = () => {
   // Extract title from markdown for helmet
   const titleMatch = content.match(/^#\s+(.+)/m);
   const title = titleMatch ? titleMatch[1] : 'Blog Post | AI Watermark Remover';
+  
+  // Extract date from markdown
+  const dateMatch = content.match(/\*Published on:\s+([^*]+)\*/);
+  const publishedDate = dateMatch ? new Date(dateMatch[1]).toISOString() : new Date().toISOString();
+  
+  // Create JSON-LD Article Schema
+  const articleSchema = {
+    "@context": "https://schema.org",
+    "@type": "Article",
+    "headline": title,
+    "image": "https://claudewatermarkremover.space/social-preview.png",
+    "author": {
+      "@type": "Organization",
+      "name": "AI Watermark Tools",
+      "url": "https://claudewatermarkremover.space/"
+    },
+    "publisher": {
+      "@type": "Organization",
+      "name": "AI Watermark Tools",
+      "logo": {
+        "@type": "ImageObject",
+        "url": "https://claudewatermarkremover.space/icon.png"
+      }
+    },
+    "datePublished": publishedDate,
+    "dateModified": publishedDate,
+    "mainEntityOfPage": {
+      "@type": "WebPage",
+      "@id": `https://claudewatermarkremover.space/post/${slug}`
+    }
+  };
 
   return (
     <div className="min-h-screen pt-24 pb-12 px-4 sm:px-6 lg:px-8 max-w-4xl mx-auto">
@@ -55,6 +86,9 @@ const DynamicBlog = () => {
         <title>{title}</title>
         <meta name="description" content={`Read about ${title} and AI watermark removal.`} />
         <link rel="canonical" href={`https://claudewatermarkremover.space/post/${slug}`} />
+        <script type="application/ld+json">
+          {JSON.stringify(articleSchema)}
+        </script>
       </Helmet>
 
       <article className="prose prose-invert prose-blue lg:prose-xl mx-auto bg-gray-800/30 p-8 rounded-2xl shadow-xl border border-gray-700/50">

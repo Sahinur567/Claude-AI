@@ -134,6 +134,33 @@ def post_to_medium(title, content, tags, original_url):
         print(f"Failed to publish to Medium: {response.text}")
         return False
 
+def ping_search_engines():
+    """Pings Google and Bing to notify them of sitemap updates for immediate indexing."""
+    sitemap_url = f"{MAIN_WEBSITE_URL}/sitemap.xml"
+    print("\n--- Pinging Search Engines ---")
+    
+    # Ping Google
+    google_ping_url = f"https://www.google.com/ping?sitemap={sitemap_url}"
+    try:
+        response = requests.get(google_ping_url, timeout=10)
+        if response.status_code == 200:
+            print("[Google] Ping successful. Sitemap submitted for crawling.")
+        else:
+            print(f"[Google] Ping failed. Status code: {response.status_code}")
+    except Exception as e:
+        print(f"[Google] Ping error: {e}")
+        
+    # Ping Bing
+    bing_ping_url = f"https://www.bing.com/ping?sitemap={sitemap_url}"
+    try:
+        response = requests.get(bing_ping_url, timeout=10)
+        if response.status_code == 200:
+            print("[Bing] Ping successful. Sitemap submitted for crawling.")
+        else:
+            print(f"[Bing] Ping failed. Status code: {response.status_code}")
+    except Exception as e:
+        print(f"[Bing] Ping error: {e}")
+
 def main():
     print(f"--- Starting Web 2.0 Syndication Script at {datetime.now()} ---")
     
@@ -169,6 +196,9 @@ def main():
     time.sleep(2) # Avoid rate limits
     
     post_to_medium(title, syndicated_content, tags, original_url)
+    
+    # Notify search engines about the new content in the sitemap
+    ping_search_engines()
     
     print("--- Syndication Complete ---")
     print("NOTE: To make this run automatically, run this script as a daily cron job!")

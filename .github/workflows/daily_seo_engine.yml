@@ -1,0 +1,60 @@
+name: Daily SEO Automation Engine
+
+on:
+  schedule:
+    # Runs at 10:00 AM UTC every day
+    - cron: '0 10 * * *'
+  # Allow manual trigger from the GitHub Actions tab
+  workflow_dispatch:
+
+jobs:
+  run-automation:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+        with:
+          # Need a token to commit back to the repo
+          token: ${{ secrets.GITHUB_TOKEN }}
+          
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.10'
+          cache: 'pip'
+          
+      - name: Install Python Dependencies
+        run: |
+          python -m pip install --upgrade pip
+          if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
+          pip install requests
+          
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: 'frontend/package-lock.json'
+          
+      - name: Install Frontend Dependencies
+        working-directory: ./frontend
+        run: npm ci
+        
+      - name: Run Master Automation Script
+        env:
+          FTP_HOST: ${{ secrets.FTP_HOST }}
+          FTP_USER: ${{ secrets.FTP_USER }}
+          FTP_PASS: ${{ secrets.FTP_PASS }}
+          FTP_PORT: ${{ secrets.FTP_PORT }}
+          DEV_TO_API_KEY: ${{ secrets.DEV_TO_API_KEY }}
+          MEDIUM_INTEGRATION_TOKEN: ${{ secrets.MEDIUM_INTEGRATION_TOKEN }}
+        run: python master_automation.py
+        
+      - name: Commit New Blogs to Repository
+        run: |
+          git config --local user.email "action@github.com"
+          git config --local user.name "GitHub Actions Automation"
+          git add frontend/public/blogs/
+          git commit -m "Auto-generated daily SEO blog" || echo "No new blogs to commit"
+          git push

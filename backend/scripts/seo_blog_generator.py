@@ -5,18 +5,22 @@ import re
 import random
 
 try:
-    from openai import OpenAI
+    import google.generativeai as genai
 except ImportError:
-    print("OpenAI library not found. Please install it using: pip install openai")
+    print("Google Generative AI library not found. Please install it using: pip install google-generativeai")
     exit(1)
 
-# Initialize OpenAI Client
-# Must provide API key via environment variable: OPENAI_API_KEY
-client = OpenAI()
+# Initialize Gemini Client
+GEMINI_API_KEY = os.environ.get("GEMINI_API_KEY")
+if not GEMINI_API_KEY:
+    print("Error: GEMINI_API_KEY environment variable not set.")
+    exit(1)
+    
+genai.configure(api_key=GEMINI_API_KEY)
 
 def generate_seo_blog_post(topic, keywords):
     """
-    Calls the OpenAI API to generate an SEO-optimized blog post in Markdown format.
+    Calls the Google Gemini API to generate an SEO-optimized blog post in Markdown format.
     """
     print(f"Generating blog post for: {topic}...")
     
@@ -28,24 +32,22 @@ def generate_seo_blog_post(topic, keywords):
     """
     
     try:
-        response = client.chat.completions.create(
-            model="gpt-3.5-turbo",
-            messages=[
-                {"role": "system", "content": "You are an expert SEO content writer and AI specialist."},
-                {"role": "user", "content": prompt}
-            ],
-            temperature=0.7
-        )
-        content = response.choices[0].message.content
+        model = genai.GenerativeModel('gemini-1.5-flash')
+        response = model.generate_content(prompt)
+        content = response.text
     except Exception as e:
-        print(f"Error calling OpenAI API: {e}")
+        print(f"Error calling Gemini API: {e}")
         return None, None
     
     current_date = datetime.datetime.now().strftime("%B %d, %Y")
     slug = re.sub(r'[^a-z0-9]+', '-', topic.lower()).strip('-') + f"-{random.randint(1000, 9999)}"
     
-    # Prepend the Title and Date to the generated markdown content
-    formatted_content = f"# {topic}\n\n*Published on: {current_date}*\n\n{content}"
+    # Generate a random seed for the dynamic image so it's unique per post
+    random_seed = random.randint(1, 100000)
+    header_image_url = f"https://loremflickr.com/1200/630/technology,ai,computer?random={random_seed}"
+    
+    # Prepend the Title, Image, and Date to the generated markdown content
+    formatted_content = f"# {topic}\n\n![AI Technology Header]({header_image_url})\n\n*Published on: {current_date}*\n\n{content}"
     
     return slug, formatted_content
 
